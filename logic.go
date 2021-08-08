@@ -116,7 +116,8 @@ func move(state GameState) BattlesnakeMoveResponse {
   }
 }
 
-// does not check for collision with head
+
+
 
 func avoidBattlesnake(snek Battlesnake, mybody []Coord, possibleMoves map[string]bool) map[string]bool {
   up := Coord{mybody[0].X, mybody[0].Y + 1}
@@ -124,7 +125,7 @@ func avoidBattlesnake(snek Battlesnake, mybody []Coord, possibleMoves map[string
   left := Coord{mybody[0].X - 1, mybody[0].Y}
   right := Coord{mybody[0].X + 1, mybody[0].Y}
 
-  for i := 1; i < len(snek.Body); i++ {
+  for i := 0; i < len(snek.Body); i++ {
     if snek.Body[i] == up {
       possibleMoves["up"] = false
     }
