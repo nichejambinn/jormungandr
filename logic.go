@@ -82,10 +82,13 @@ func move(state GameState) BattlesnakeMoveResponse {
 
 	// TODO: Step 2 - Don't hit yourself.
 	// Use information in GameState to prevent your Battlesnake from colliding with itself.
-	// mybody := state.You.Body
+	mybody := state.You.Body
 
 	// TODO: Step 3 - Don't collide with others.
 	// Use information in GameState to prevent your Battlesnake from colliding with others.
+  for _, snek := range state.Board.Snakes {
+    possibleMoves = avoidBattlesnake(snek, mybody, possibleMoves)
+  }
 
 	// TODO: Step 4 - Find food.
 	// Use information in GameState to seek out and find food.
@@ -110,5 +113,31 @@ func move(state GameState) BattlesnakeMoveResponse {
 	}
 	return BattlesnakeMoveResponse{
 		Move: nextMove,
-	}
+  }
+}
+
+// does not check for collision with head
+
+func avoidBattlesnake(snek Battlesnake, mybody []Coord, possibleMoves map[string]bool) map[string]bool {
+  up := Coord{mybody[0].X, mybody[0].Y + 1}
+  down := Coord{mybody[0].X, mybody[0].Y - 1}
+  left := Coord{mybody[0].X - 1, mybody[0].Y}
+  right := Coord{mybody[0].X + 1, mybody[0].Y}
+
+  for i := 1; i < len(snek.Body); i++ {
+    if snek.Body[i] == up {
+      possibleMoves["up"] = false
+    }
+    if snek.Body[i] == down {
+      possibleMoves["down"] = false
+    }
+    if snek.Body[i] == left {
+      possibleMoves["left"] = false
+    }
+    if snek.Body[i] == right {
+      possibleMoves["right"] = false
+    }
+  }
+  
+  return possibleMoves
 }
