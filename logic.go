@@ -7,8 +7,10 @@ package main
 
 import (
 	"log"
-	"math/rand"
+	"math"
 )
+
+var boardstart [][]int
 
 // This function is called when you register your Battlesnake on play.battlesnake.com
 // See https://docs.battlesnake.com/guides/getting-started#step-4-register-your-battlesnake
@@ -31,6 +33,9 @@ func info() BattlesnakeInfoResponse {
 // It's purely for informational purposes, you don't have to make any decisions here.
 func start(state GameState) {
 	log.Printf("%s START\n", state.Game.ID)
+
+  // map initial board layout to array
+  boardstart = loadBoardIntoArray(state)
 }
 
 // This function is called when a game your Battlesnake was in has ended.
@@ -43,102 +48,88 @@ func end(state GameState) {
 // where to move -- valid moves are "up", "down", "left", or "right".
 // We've provided some code and comments to get you started.
 func move(state GameState) BattlesnakeMoveResponse {
-	possibleMoves := map[string]bool{
-		"up":    true,
-		"down":  true,
-		"left":  true,
-		"right": true,
+  var boardstate = boardstart // arrays are value types in go
+
+  boardstate = avoidOrEatSnakes(state, boardstate)
+
+  myHead := state.You.Body[0] // Coordinates of your head
+	possibleMoves := map[string]int{
+		"up":    boardstate[myHead.Y+1][myHead.X],
+		"down":  boardstate[myHead.Y-1][myHead.X],
+		"left":  boardstate[myHead.Y][myHead.X-1],
+		"right": boardstate[myHead.Y][myHead.X+1],
 	}
-
-	// Step 0: Don't let your Battlesnake move back in on it's own neck
-	myHead := state.You.Body[0] // Coordinates of your head
-	myNeck := state.You.Body[1] // Coordinates of body piece directly behind your head (your "neck")
-	if myNeck.X < myHead.X {
-		possibleMoves["left"] = false
-	} else if myNeck.X > myHead.X {
-		possibleMoves["right"] = false
-	} else if myNeck.Y < myHead.Y {
-		possibleMoves["down"] = false
-	} else if myNeck.Y > myHead.Y {
-		possibleMoves["up"] = false
-	}
-
-	// TODO: Step 1 - Don't hit walls.
-	// Use information in GameState to prevent your Battlesnake from moving beyond the boundaries of the board.
-	boardWidth := state.Board.Width
-	boardHeight := state.Board.Height
-
-  if (myHead.Y + 1) >= boardHeight {
-    possibleMoves["up"] = false
-  } else if (myHead.Y - 1) < 0 {
-    possibleMoves["down"] = false
-  }
-
-  if (myHead.X + 1) >= boardWidth {
-    possibleMoves["right"] = false
-  } else if (myHead.X - 1) < 0 {
-    possibleMoves["left"] = false
-  }
-
-	// TODO: Step 2 - Don't hit yourself.
-	// Use information in GameState to prevent your Battlesnake from colliding with itself.
-	mybody := state.You.Body
-
-	// TODO: Step 3 - Don't collide with others.
-	// Use information in GameState to prevent your Battlesnake from colliding with others.
-  for _, snek := range state.Board.Snakes {
-    possibleMoves = avoidBattlesnake(snek, mybody, possibleMoves)
-  }
-
+	
 	// TODO: Step 4 - Find food.
 	// Use information in GameState to seek out and find food.
 
 	// Finally, choose a move from the available safe moves.
-	// TODO: Step 5 - Select a move to make based on strategy, rather than random.
+	// TODO: Step 5 - Select a move to make based on strategy
 	var nextMove string
 
-	safeMoves := []string{}
-	for move, isSafe := range possibleMoves {
-		if isSafe {
-			safeMoves = append(safeMoves, move)
-		}
-	}
+  // choose the move with the highest weight
+  max := -5000
+  for k, v := range possibleMoves {
+    if v >= max {
+      max = v
+      nextMove = k
+    }
+  }
 
-	if len(safeMoves) == 0 {
-		nextMove = "down"
-		log.Printf("%s MOVE %d: No safe moves detected! Moving %s\n", state.Game.ID, state.Turn, nextMove)
-	} else {
-		nextMove = safeMoves[rand.Intn(len(safeMoves))]
-		log.Printf("%s MOVE %d: %s\n", state.Game.ID, state.Turn, nextMove)
-	}
+  log.Printf("%s MOVE %d: %s\n", state.Game.ID, state.Turn, nextMove)
+
 	return BattlesnakeMoveResponse{
 		Move: nextMove,
   }
 }
 
 
+// creates a matrix of the board with two extra rows and columns to represent the outside edges
+// [0, 0] on the gamestate board is [1, 1] in the board array
+func loadBoardIntoArray(state GameState) [][]int {
+  var boardstate [][]int
 
+  for y := 0; y < state.Board.Height + 1; y++ {
+    for x := 0; x < state.Board.Width + 1; x++ {
+      centreXSq := math.Pow(float64(x - state.Board.Width / 2), 2)
+      centreYSq := math.Pow(float64(y - state.Board.Height / 2), 2)
 
-func avoidBattlesnake(snek Battlesnake, mybody []Coord, possibleMoves map[string]bool) map[string]bool {
-  up := Coord{mybody[0].X, mybody[0].Y + 1}
-  down := Coord{mybody[0].X, mybody[0].Y - 1}
-  left := Coord{mybody[0].X - 1, mybody[0].Y}
-  right := Coord{mybody[0].X + 1, mybody[0].Y}
-
-  for i := 0; i < len(snek.Body); i++ {
-    if snek.Body[i] == up {
-      possibleMoves["up"] = false
-    }
-    if snek.Body[i] == down {
-      possibleMoves["down"] = false
-    }
-    if snek.Body[i] == left {
-      possibleMoves["left"] = false
-    }
-    if snek.Body[i] == right {
-      possibleMoves["right"] = false
+      if x == 0 || y == 0 || x == state.Board.Width || y == state.Board.Height {
+        // rule out going off the board
+        boardstate[y][x] = -1000
+      } else if centreXSq + centreYSq <= math.Pow(float64(state.Board.Width - 2), 2) {
+        // steer within the circle
+        if centreXSq + centreYSq < math.Pow(float64((state.Board.Width -2) / 2), 2) {
+          // but away from the centre
+          boardstate[y][x] = 5
+        } else {        
+          boardstate[y][x] = 10
+        }
+      } else {
+        // avoid the corners
+        boardstate[y][x] = -5
+      }
     }
   }
+
+  return boardstate
+}
+
+
+
+func avoidOrEatSnakes(state GameState, board [][]int) [][]int {
   
-  return possibleMoves
+  for _, snake := range state.Board.Snakes {
+    for i, coord := range snake.Body {
+      if i == 0 && snake.Length < state.You.Length {
+        // if our snake is longer, favour the head of the enemy snake
+        board[coord.Y+1][coord.X+1] += 100
+      } else {
+        // avoid every other part of any snake
+        board[coord.Y+1][coord.X+1] -= 1000
+      }
+    }
+  }
+
+  return board
 }
