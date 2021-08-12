@@ -11,6 +11,7 @@ import (
 	"math"
 )
 
+var WALLS int = -2000
 var CENTER int = 100
 var RING int = 50
 var CORNERS int = -20
@@ -109,7 +110,7 @@ func avoidOrEatSnakes(state GameState, boardstate [][]int) {
         bloom(Coord{coord.X+1, coord.Y+1}, PURSUE_HEAD, 2, boardstate)
       } else {
         // avoid every other part of any snake
-        boardstate[coord.Y+1][coord.X+1] -= 1000
+        boardstate[coord.Y+1][coord.X+1] += -1000
 
         if snake.Name != state.You.Name {
           // if it isn't our head spread a diminishing avoidance AOE scaled by the snake's length
@@ -211,7 +212,7 @@ func loadBoardIntoArray(state GameState, boardstate [][]int) {
 
       if x == 0 || y == 0 || x == width - 1 || y == height - 1 {
         // rule out going off the board
-        boardstate[y][x] = -1000
+        boardstate[y][x] = WALLS
       } else if centerXSq + centerYSq <= math.Pow(float64(state.Board.Width / 2 - 1), 2) {
         // steer within the circle
         if centerXSq + centerYSq < math.Pow(float64(state.Board.Width / 4), 2) {
