@@ -11,7 +11,13 @@ import (
 	"math"
 )
 
-var lastMove string
+var CENTER int = 100
+var RING int = 50
+var CORNERS int = -20
+var STEER int = 80
+var PURSUE_HEAD int = 100
+var AVOID int = -150
+var FOOD int = 200
 
 // This function is called when you register your Battlesnake on play.battlesnake.com
 // See https://docs.battlesnake.com/guides/getting-started#step-4-register-your-battlesnake
@@ -51,7 +57,7 @@ func move(state GameState) BattlesnakeMoveResponse {
   loadBoardIntoArray(state, boardstate)
   avoidOrEatSnakes(state, boardstate)
   eatWhenHungry(state, boardstate)
-  //steerToCenter(state, boardstate)
+  steerToCenter(state, boardstate)
 
   // Get coords of head where [0,0] -> [1,1]
   myHead := state.You.Body[0]
@@ -84,8 +90,6 @@ func move(state GameState) BattlesnakeMoveResponse {
     }
   }
 
-  lastMove = nextMove
-
   log.Printf("%s MOVE %d: %s\n", state.Game.ID, state.Turn, nextMove)
 
 	return BattlesnakeMoveResponse{
@@ -94,51 +98,22 @@ func move(state GameState) BattlesnakeMoveResponse {
 }
 
 
-// creates a matrix of the board with two extra rows and columns to represent the outside edges
-// [0, 0] on the gamestate board is [1, 1] in the board array
-func loadBoardIntoArray(state GameState, boardstate [][]int) {
-  height := len(boardstate)
-  width := len(boardstate[0])
-
-  for y := 0; y < height; y++ {
-    for x := 0; x < width; x++ {
-      centerXSq := math.Pow(float64(x - (width / 2)), 2)
-      centerYSq := math.Pow(float64(y - (height / 2)), 2)
-
-      if x == 0 || y == 0 || x == width - 1 || y == height - 1 {
-        // rule out going off the board
-        boardstate[y][x] = -1000
-      } else if centerXSq + centerYSq <= math.Pow(float64(state.Board.Width / 2 - 1), 2) {
-        // steer within the circle
-        if centerXSq + centerYSq < math.Pow(float64(state.Board.Width / 4), 2) {
-          // but away from the centre
-          boardstate[y][x] = 100
-        } else {        
-          boardstate[y][x] = 80
-        }
-      } else {
-        // avoid the corners
-        boardstate[y][x] = -50
-      }
-    }
-  }
-}
 
 
 
 func avoidOrEatSnakes(state GameState, boardstate [][]int) {
-  
   for _, snake := range state.Board.Snakes {
     for i, coord := range snake.Body {
       if i == 0 && snake.Length < state.You.Length {
         // if our snake is longer, favour the head of the enemy snake
-        bloom(Coord{coord.X+1, coord.Y+1}, 100, 3, boardstate)
-        //boardstate[coord.Y+1][coord.X+1] += 100
+        bloom(Coord{coord.X+1, coord.Y+1}, PURSUE_HEAD, 2, boardstate)
       } else {
-        if i != 0 || snake.Name != state.You.Name {
-          // avoid every other part of any snake
-          boardstate[coord.Y+1][coord.X+1] -= 1000
-          bloom(Coord{coord.X+1, coord.Y+1}, -150 / (i + 1), 2, boardstate)
+        // avoid every other part of any snake
+        boardstate[coord.Y+1][coord.X+1] -= 1000
+
+        if i > 1 || snake.Name != state.You.Name {
+          // if it isn't our head spread a diminishing avoidance AOE scaled by the snake's length
+          bloom(Coord{coord.X+1, coord.Y+1}, AVOID * int(snake.Length) / (i + 1), 2, boardstate)
         }
       }
     }
@@ -153,6 +128,8 @@ func steerToCenter(state GameState, boardstate [][]int) {
   myHead.Y += 1
   myHead.X += 1
 
+  center := Coord{state.Board.Width/2, state.Board.Height/2}
+
 	// Select a move to make based on strategy
 	possibleMoves := map[string]Coord{
 		"up":    Coord{myHead.X, myHead.Y+1},
@@ -164,13 +141,14 @@ func steerToCenter(state GameState, boardstate [][]int) {
   var dir string
   min := 1000
   for k, coord := range possibleMoves {
-    if sqDistance(coord, myHead) < min {
+    if sqDistance(coord, center) < min {
       dir = k
     }
   }
 
   c := possibleMoves[dir]
-  boardstate[c.Y][c.X] += 30
+  //boardstate[c.Y][c.X] += STEER
+  bloom(Coord{c.X, c.Y}, STEER, 2, boardstate)
 }
 
 
@@ -189,6 +167,7 @@ func bloom(center Coord, power int, spread int, boardstate [][]int) {
         for r := 0; r <= spread; r++ {
           if centerXSq + centerYSq <= math.Pow(float64(r), 2) {
             boardstate[y][x] += power / (r+1)
+            break
           }
         }
       }
@@ -210,7 +189,38 @@ func eatWhenHungry(state GameState, boardstate [][]int) {
 
   if isHungry {
     for _, food := range state.Board.Food {
-      bloom(Coord{food.X+1, food.Y+1}, 80, 3, boardstate)
+      bloom(Coord{food.X+1, food.Y+1}, FOOD, 3, boardstate)
+    }
+  }
+}
+
+
+
+// creates a matrix of the board with two extra rows and columns to represent the outside edges
+// [0, 0] on the gamestate board is [1, 1] in the board array
+func loadBoardIntoArray(state GameState, boardstate [][]int) {
+  height := len(boardstate)
+  width := len(boardstate[0])
+
+  for y := 0; y < height; y++ {
+    for x := 0; x < width; x++ {
+      centerXSq := math.Pow(float64(x - (width / 2)), 2)
+      centerYSq := math.Pow(float64(y - (height / 2)), 2)
+
+      if x == 0 || y == 0 || x == width - 1 || y == height - 1 {
+        // rule out going off the board
+        boardstate[y][x] = -1000
+      } else if centerXSq + centerYSq <= math.Pow(float64(state.Board.Width / 2 - 1), 2) {
+        // steer within the circle
+        if centerXSq + centerYSq < math.Pow(float64(state.Board.Width / 4), 2) {
+          boardstate[y][x] = CENTER
+        } else {        
+          boardstate[y][x] = RING
+        }
+      } else {
+        // avoid the corners
+        boardstate[y][x] = CORNERS
+      }
     }
   }
 }
