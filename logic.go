@@ -12,6 +12,7 @@ import (
 )
 
 var WALLS int = -2000
+var BULLSEYE int = 40
 var CENTER int = 100
 var RING int = 50
 var CORNERS int = -20
@@ -220,7 +221,9 @@ func loadBoardIntoArray(state GameState, boardstate [][]int) {
         boardstate[y][x] = WALLS
       } else if centerXSq + centerYSq <= math.Pow(float64(state.Board.Width / 2.0 - 1), 2) {
         // steer within the circle
-        if centerXSq + centerYSq < math.Pow(float64(state.Board.Width / 4.0), 2) {
+        if centerXSq + centerYSq <= 1 {
+          boardstate[y][x] = BULLSEYE
+        } else if centerXSq + centerYSq < math.Pow(float64(state.Board.Width / 4.0), 2) {
           boardstate[y][x] = CENTER
         } else {        
           boardstate[y][x] = RING
