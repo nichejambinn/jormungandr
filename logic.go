@@ -9,6 +9,7 @@ import (
   "fmt"
 	"log"
 	"math"
+  "sort"
 )
 
 var WALLS int = -2000
@@ -187,14 +188,21 @@ func bloom(center Coord, power int, spread int, boardstate [][]int) {
 
 
 func eatWhenHungry(state GameState, boardstate [][]int) {
-  var maxLength int32
+  var lengths []int
   for _, snake := range state.Board.Snakes {
-    if snake.Length > maxLength {
-      maxLength = snake.Length
-    }
+    lengths = append(lengths, int(snake.Length))
   }
 
-  isHungry := (state.You.Length < maxLength + int32(len(state.Board.Snakes) + 1)) || (state.You.Health < 50)
+  sort.Ints(lengths)
+  var isHungry bool = false
+  var myLength int = int(state.You.Length)
+  if myLength < lengths[len(state.Board.Snakes) - 1] {
+    isHungry = true
+  } else if myLength - lengths[len(state.Board.Snakes) - 2] < 3 {
+    isHungry = true
+  } else if state.You.Health < 50 {
+    isHungry = true
+  }
 
   if isHungry {
     for _, food := range state.Board.Food {
