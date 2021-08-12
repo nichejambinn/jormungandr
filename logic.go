@@ -202,7 +202,7 @@ func eatWhenHungry(state GameState, boardstate [][]int) {
     isHungry = true
   } else if myLength - lengths[len(state.Board.Snakes) - 2] < LONGER_BY {
     isHungry = true
-  } else if state.You.Health < MIN_HEALTH {
+  } else if int(state.You.Health) < MIN_HEALTH {
     isHungry = true
   }
 
