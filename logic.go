@@ -12,13 +12,13 @@ import (
 )
 
 var WALLS int = -2000
-var CENTER int = 120
+var CENTER int = 100
 var RING int = 50
 var CORNERS int = -20
 var STEER int = 20
-var PURSUE_HEAD int = 100
-var AVOID int = -150
-var FOOD int = 200
+var PURSUE_HEAD int = 120
+var AVOID int = -200
+var FOOD int = 250
 
 // This function is called when you register your Battlesnake on play.battlesnake.com
 // See https://docs.battlesnake.com/guides/getting-started#step-4-register-your-battlesnake
@@ -150,10 +150,11 @@ func steerToCenter(state GameState, boardstate [][]int) {
       dir = k
     }
   }
+  //log.Printf("Steering %s", dir)
 
   c := possibleMoves[dir]
   //boardstate[c.Y][c.X] += STEER
-  bloom(Coord{c.X, c.Y}, STEER, 2, boardstate)
+  bloom(Coord{c.X, c.Y}, STEER, 1, boardstate)
 }
 
 
