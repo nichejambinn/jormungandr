@@ -186,16 +186,15 @@ func bloom(center Coord, power int, spread int, boardstate [][]int) {
 
 
 func eatWhenHungry(state GameState, boardstate [][]int) {
-  // var maxLength int32
-  // for _, snake := range state.Board.Snakes {
-  //   if snake.Length > maxLength {
-  //     maxLength = snake.Length
-  //   }
-  // }
+  var maxLength int32
+  for _, snake := range state.Board.Snakes {
+    if snake.Length > maxLength {
+      maxLength = snake.Length
+    }
+  }
 
-  // isHungry := (state.You.Length < maxLength + int32(len(state.Board.Snakes))) || (state.You.Health < 50)
+  isHungry := (state.You.Length < maxLength + int32(len(state.Board.Snakes) + 1)) || (state.You.Health < 50)
 
-  isHungry := true
   if isHungry {
     for _, food := range state.Board.Food {
       bloom(Coord{food.X+1, food.Y+1}, FOOD, 3, boardstate)
