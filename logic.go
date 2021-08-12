@@ -21,6 +21,8 @@ var STEER int = 20
 var PURSUE_HEAD int = 120
 var AVOID int = -200
 var FOOD int = 250
+var MIN_HEALTH int = 50
+var LONGER_BY int = 3
 
 // This function is called when you register your Battlesnake on play.battlesnake.com
 // See https://docs.battlesnake.com/guides/getting-started#step-4-register-your-battlesnake
@@ -198,9 +200,9 @@ func eatWhenHungry(state GameState, boardstate [][]int) {
   var myLength int = int(state.You.Length)
   if myLength < lengths[len(state.Board.Snakes) - 1] {
     isHungry = true
-  } else if myLength - lengths[len(state.Board.Snakes) - 2] < 3 {
+  } else if myLength - lengths[len(state.Board.Snakes) - 2] < LONGER_BY {
     isHungry = true
-  } else if state.You.Health < 50 {
+  } else if state.You.Health < MIN_HEALTH {
     isHungry = true
   }
 
