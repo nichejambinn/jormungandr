@@ -12,7 +12,7 @@ import (
 )
 
 var WALLS int = -2000
-var CENTER int = 100
+var CENTER int = 120
 var RING int = 50
 var CORNERS int = -20
 var STEER int = 80
@@ -114,9 +114,9 @@ func avoidOrEatSnakes(state GameState, boardstate [][]int) {
 
         if snake.Name != state.You.Name {
           // if it isn't our head spread a diminishing avoidance AOE scaled by the snake's length
-          bloom(Coord{coord.X+1, coord.Y+1}, AVOID * int(snake.Length) / (i + 1), 2, boardstate)
+          bloom(Coord{coord.X+1, coord.Y+1}, AVOID * int(snake.Length) / (i + 1.0), 2, boardstate)
         } else if i > 1 {
-          bloom(Coord{coord.X+1, coord.Y+1}, AVOID / (i + 1), 2, boardstate)
+          bloom(Coord{coord.X+1, coord.Y+1}, AVOID / (i + 1.0), 2, boardstate)
         }
       }
     }
@@ -131,7 +131,7 @@ func steerToCenter(state GameState, boardstate [][]int) {
   myHead.Y += 1
   myHead.X += 1
 
-  center := Coord{state.Board.Width/2, state.Board.Height/2}
+  center := Coord{state.Board.Width/2.0, state.Board.Height/2.0}
 
 	// Select a move to make based on strategy
 	possibleMoves := map[string]Coord{
@@ -142,9 +142,11 @@ func steerToCenter(state GameState, boardstate [][]int) {
   }
 
   var dir string
-  min := 1000
+  min := float64(1000)
   for k, coord := range possibleMoves {
-    if sqDistance(coord, center) < min {
+    sqDist := sqDistance(coord, center)
+    if sqDist < min {
+      min = sqDist
       dir = k
     }
   }
@@ -181,15 +183,16 @@ func bloom(center Coord, power int, spread int, boardstate [][]int) {
 
 
 func eatWhenHungry(state GameState, boardstate [][]int) {
-  var maxLength int32
-  for _, snake := range state.Board.Snakes {
-    if snake.Length > maxLength {
-      maxLength = snake.Length
-    }
-  }
+  // var maxLength int32
+  // for _, snake := range state.Board.Snakes {
+  //   if snake.Length > maxLength {
+  //     maxLength = snake.Length
+  //   }
+  // }
 
-  isHungry := (state.You.Length < maxLength + int32(len(state.Board.Snakes))) || (state.You.Health < 50)
+  // isHungry := (state.You.Length < maxLength + int32(len(state.Board.Snakes))) || (state.You.Health < 50)
 
+  isHungry := true
   if isHungry {
     for _, food := range state.Board.Food {
       bloom(Coord{food.X+1, food.Y+1}, FOOD, 3, boardstate)
@@ -207,15 +210,15 @@ func loadBoardIntoArray(state GameState, boardstate [][]int) {
 
   for y := 0; y < height; y++ {
     for x := 0; x < width; x++ {
-      centerXSq := math.Pow(float64(x - (width / 2)), 2)
-      centerYSq := math.Pow(float64(y - (height / 2)), 2)
+      centerXSq := math.Pow(float64(x - (width / 2.0)), 2)
+      centerYSq := math.Pow(float64(y - (height / 2.0)), 2)
 
       if x == 0 || y == 0 || x == width - 1 || y == height - 1 {
         // rule out going off the board
         boardstate[y][x] = WALLS
-      } else if centerXSq + centerYSq <= math.Pow(float64(state.Board.Width / 2 - 1), 2) {
+      } else if centerXSq + centerYSq <= math.Pow(float64(state.Board.Width / 2.0 - 1), 2) {
         // steer within the circle
-        if centerXSq + centerYSq < math.Pow(float64(state.Board.Width / 4), 2) {
+        if centerXSq + centerYSq < math.Pow(float64(state.Board.Width / 4.0), 2) {
           boardstate[y][x] = CENTER
         } else {        
           boardstate[y][x] = RING
@@ -230,8 +233,8 @@ func loadBoardIntoArray(state GameState, boardstate [][]int) {
 
 
 
-func sqDistance(coord1 Coord, coord2 Coord) int {
-  return int(math.Pow(float64(coord2.X - coord1.X), 2) + math.Pow(float64(coord2.Y - coord1.Y), 2))
+func sqDistance(coord1 Coord, coord2 Coord) float64 {
+  return math.Pow(float64(coord2.X - coord1.X), 2) + math.Pow(float64(coord2.Y - coord1.Y), 2)
 }
 
 
