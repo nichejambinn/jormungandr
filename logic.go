@@ -111,9 +111,11 @@ func avoidOrEatSnakes(state GameState, boardstate [][]int) {
         // avoid every other part of any snake
         boardstate[coord.Y+1][coord.X+1] -= 1000
 
-        if i > 1 || snake.Name != state.You.Name {
+        if snake.Name != state.You.Name {
           // if it isn't our head spread a diminishing avoidance AOE scaled by the snake's length
           bloom(Coord{coord.X+1, coord.Y+1}, AVOID * int(snake.Length) / (i + 1), 2, boardstate)
+        } else if i > 1 {
+          bloom(Coord{coord.X+1, coord.Y+1}, AVOID / (i + 1), 2, boardstate)
         }
       }
     }
