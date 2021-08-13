@@ -112,6 +112,35 @@ func avoidOrEatSnakes(state GameState, boardstate [][]int) {
       if i == 0 && snake.Length < state.You.Length {
         // if our snake is longer, favour the head of the enemy snake
         bloom(Coord{coord.X+1, coord.Y+1}, PURSUE_HEAD, 2, boardstate)
+      } else if i == 0 && snake.Length >= state.You.Length && snake.Name != state.You.Name {
+        // avoid a fatal head-to-head
+        myHead := state.You.Body[0]
+        myHead.X += 1
+        myHead.Y += 1
+        myPossibleMoves := map[string]Coord{
+          "up":    Coord{myHead.X, myHead.Y+1},
+          "down":  Coord{myHead.X, myHead.Y-1},
+          "left":  Coord{myHead.X-1, myHead.Y},
+          "right": Coord{myHead.X+1, myHead.Y},
+        }
+
+        enemyHead := snake.Body[0]
+        enemyHead.X += 1
+        enemyHead.Y += 1
+        enemyPossibleMoves := map[string]Coord{
+          "up":    Coord{enemyHead.X, enemyHead.Y+1},
+          "down":  Coord{enemyHead.X, enemyHead.Y-1},
+          "left":  Coord{enemyHead.X-1, enemyHead.Y},
+          "right": Coord{enemyHead.X+1, enemyHead.Y},
+        }
+
+        for _, v1 := range myPossibleMoves {
+          for _, v2 := range enemyPossibleMoves {
+            if v1 == v2 {
+              boardstate[v1.Y][v1.X] -= 1000
+            }
+          }
+        }
       } else {
         // avoid every other part of any snake
         boardstate[coord.Y+1][coord.X+1] += -1000
