@@ -62,7 +62,7 @@ func move(state GameState) BattlesnakeMoveResponse {
   loadBoardIntoArray(state, boardstate)
   avoidOrEatSnakes(state, boardstate)
   eatWhenHungry(state, boardstate)
-  steerToCenter(state, boardstate)
+  //steerToCenter(state, boardstate)
 
   // Get coords of head where [0,0] -> [1,1]
   myHead := state.You.Body[0]
